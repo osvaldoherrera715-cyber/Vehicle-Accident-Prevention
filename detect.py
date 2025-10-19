@@ -1,46 +1,43 @@
 from ultralytics import YOLO
 import os
+import cv2
 
-# -----------------------------
-# 1️⃣ Paths
-# -----------------------------
-model_path = r"C:\Users\osval\Accident-Prevention\best.pt"  # your trained weights
-source_path = r"C:\Users\osval\Accident-Prevention\TrialRun.jpg"  # video or image
+model_path = r"C:\Users\osval\Accident-Prevention\best.pt"
+source_path = r"C:\Users\osval\Accident-Prevention\TrialWeb.jpg"
+output_folder = r"C:\Users\osval\Accident-Prevention\InferenceResults"
+os.makedirs(output_folder, exist_ok=True)
 
-# Base output folder
-output_base = r"C:\Users\osval\Accident-Prevention\InferenceResults"
-os.makedirs(output_base, exist_ok=True)
-
-# -----------------------------
-# 2️⃣ Load the trained model
-# -----------------------------
+print("Loading YOLO model...")
 model = YOLO(model_path)
 
-# -----------------------------
-# 3️⃣ Confidence intervals to test
-# -----------------------------
-conf_values = [0.25, 0.35, 0.45, 0.55]  # adjust as needed
 
-# -----------------------------
-# 4️⃣ Run inference for each confidence
-# -----------------------------
-for conf in conf_values:
-    print(f"🔹 Running inference with confidence={conf}")
-    
-    # Create folder for this confidence
-    output_folder = os.path.join(output_base, f"conf_{int(conf*100)}")
-    os.makedirs(output_folder, exist_ok=True)
-    
-    # Run YOLOv11 prediction
-    model.predict(
-        source=source_path,
-        imgsz=1280,        # match training
-        conf=conf,
-        #device=0,          # set 0 for GPU, or 'cpu' if no CUDA
-        save=True,
-        show=False,        # set True to display each frame
-        save_dir=output_folder  # save results in this folder
-    )
+print("Running inference with confidence=0.25...")
 
-print("✅ Inference completed for all confidence levels!")
+# Annotate (boxes + class names)
+results = model.predict(
+    source=source_path,
+    imgsz=1280,
+    conf=0.25,
+   # device=0,          # GPU if available, else 'cpu'
+    save=True,         # saves annotated image
+    show=False,        # we will handle display
+    save_dir=output_folder,
+    name="TrialRun_conf25",
+    exist_ok=True
+)
+
+# Display annotated image
+for r in results:
+    # r.orig_img is the original image
+    # r.plot() returns the annotated image
+    annotated_img = r.plot()  # this contains boxes + labels
+    cv2.namedWindow("YOLO Detection", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("YOLO Detection", 1280, 720)  # adjust window size
+    cv2.imshow("YOLO Detection", annotated_img)
+    cv2.waitKey(0)  # wait until a key is pressed
+
+cv2.destroyAllWindows()
+print(f"✅ Inference completed. Annotated image saved in: {output_folder}")
+
+
 
